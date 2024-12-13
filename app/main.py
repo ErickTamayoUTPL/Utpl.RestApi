@@ -1,53 +1,73 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
-app = FastAPI()
+# App FastAPI
+app = FastAPI(
+    title="API de Registro Centralizado de Proyectos para UrbanRetail")
+
+# Modelo de datos para un proyecto
 
 
-class Orden(BaseModel):
+class Project(BaseModel):
     id: int
-    producto: str
-    cantidad: float
-    tipo: str
-    precio: float
-    total: float
+    name: str
+    description: Optional[str] = None
+    status: str  # Puede ser "Pendiente", "En progreso", "Finalizado"
 
 
-# Lista vacía para almacenar los artículos creados.
-ordenes = []
+# Base de datos simulada
+projects_db = []
 
-# Ruta para la página de inicio que devuelve un mensaje de bienvenida.
-@app.get('/')
-def bienvenida():
-    return {'mensaje': 'Welcome a mi aplicación FastAPI Utpl 2028'}
+# Endpoint para crear un nuevo proyecto
 
-# Ruta para obtener todos los artículos almacenados en la lista.
-# El parámetro "response_model" especifica que la respuesta será una lista de objetos "Orden".
-@app.get("/ordenes", response_model=List[Orden])
-async def leer_ordenes():
-    return ordenes
 
-# Ruta para crear un nuevo artículo.
-# El parámetro "response_model" especifica que la respuesta será un objeto "Orden".
-# ES
-@app.post("/ordenes", response_model=Orden)
-async def crear_orden(orden: Orden):
-    ordenes.append(orden)  # Agrega el artículo a la lista.
+@app.post("/projects", response_model=Project)
+def create_project(project: Project):
+    for existing_project in projects_db:
+        if existing_project.id == project.id:
+            raise HTTPException(
+                status_code=400, detail="El proyecto con este ID ya existe.")
+    projects_db.append(project)
+    return project
 
-    return orden
+# Endpoint para obtener todos los proyectos
 
-# Ruta para actualizar una orden existente por su ID.
-# El parámetro "response_model" especifica que la respuesta será un objeto "Orden".
-@app.put("/ordenes/{orden_id}", response_model=Orden)
-async def actualizar_orden(orden_id: int, orden: Orden):
-    ordenes[orden_id] = orden  # Actualiza la orden en la lista.
-    return orden
 
-# Ruta para eliminar una orden por su ID.
-# No se especifica "response_model" ya que no se devuelve ningún objeto en la respuesta.
-# Este metodo elimina una orden por su ID.
-@app.delete("/ordenes/{orden_id}")
-async def eliminar_orden(orden_id: int):
-    del ordenes[orden_id]  # Elimina el item de la lista.
-    return {"mensaje": "Orden eliminada"}  # Devuelve un mensaje informativo.
+@app.get("/projects", response_model=List[Project])
+def get_projects():
+    return projects_db
+
+# Endpoint para obtener un proyecto por ID
+
+
+@app.get("/projects/{project_id}", response_model=Project)
+def get_project(project_id: int):
+    for project in projects_db:
+        if project.id == project_id:
+            return project
+    raise HTTPException(status_code=404, detail="Proyecto no encontrado.")
+
+# Endpoint para actualizar un proyecto por ID
+
+
+@app.put("/projects/{project_id}", response_model=Project)
+def update_project(project_id: int, updated_project: Project):
+    for index, project in enumerate(projects_db):
+        if project.id == project_id:
+            projects_db[index] = updated_project
+            return updated_project
+    raise HTTPException(status_code=404, detail="Proyecto no encontrado.")
+
+# Endpoint para eliminar un proyecto por ID
+
+
+@app.delete("/projects/{project_id}", response_model=Project)
+def delete_project(project_id: int):
+    for index, project in enumerate(projects_db):
+        if project.id == project_id:
+            deleted_project = projects_db.pop(index)
+            return deleted_project
+    raise HTTPException(status_code=404, detail="Proyecto no encontrado.")
+
+# Ejecuta la app: usa "uvicorn <nombre_archivo>:app --reload" para correrla

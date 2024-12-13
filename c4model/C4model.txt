@@ -1,0 +1,84 @@
+workspace "Registro Centralizado de Proyectos" {
+
+    !identifiers hierarchical
+
+    description "Una API para gestionar proyectos de manera centralizada"
+
+    model {
+        pUsuario = person "Usuario Final" {
+            description "Profesionales que registran y consultan proyectos"
+        }
+        pAdministrador = person "Administrador del Sistema" {
+            description "Gestiona permisos y monitorea el sistema"
+        }
+
+        ssRegistroProyectos = softwareSystem "Registro Centralizado de Proyectos" {
+            
+            webAppGestion = container "Web de Gestión de Proyectos" {
+                tags "AppWeb"
+                technology "SPA Angular 16"
+                description "Sitio web para la administración y visualización de proyectos"
+            }
+
+            apiRegistro = container "API de Registro de Proyectos" {
+                tags "API"
+                technology "Python 3 / FastAPI"
+                description "API REST para registrar, consultar y administrar proyectos"
+
+                seguridadComponent = component "Componente de Seguridad" "Gestión de inicio de sesión, registro y roles de usuario" "Fast Security / Python 3"
+                emailComponent = component "Componente de Notificaciones" "Envío de notificaciones por correo" "Python Email"
+            }
+
+            db = container "Base de Datos" {
+                tags "Database"
+                technology "PostgreSQL 14"
+                description "Almacén centralizado de datos de proyectos"
+            }
+        }
+
+        pUsuario -> ssRegistroProyectos.webAppGestion "Interactúa para registrar y consultar proyectos"
+        pAdministrador -> ssRegistroProyectos.webAppGestion "Administra permisos y supervisa el sistema"
+        ssRegistroProyectos.apiRegistro -> ssRegistroProyectos.db "Lee y escribe datos de proyectos"
+        ssRegistroProyectos.webAppGestion -> ssRegistroProyectos.apiRegistro "Comunica solicitudes" "https"
+    }
+
+    views {
+        systemContext ssRegistroProyectos {
+            include *
+            autolayout lr
+        }
+
+        container ssRegistroProyectos {
+            include *
+            autolayout lr
+        }
+        
+        component ssRegistroProyectos.apiRegistro {
+            include *
+            autolayout lr
+        }
+
+        styles {
+            element "Element" {
+                color #ffffff
+            }
+            element "Person" {
+                background #2e75b6
+                shape person
+            }
+            element "Software System" {
+                background #4472c4
+            }
+            element "Container" {
+                background #5b9bd5
+            }
+            element "Database" {
+                shape cylinder
+            }
+        }
+    }
+
+    configuration {
+        scope softwaresystem
+    }
+}
